@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test-mingw:
+    runs-on: windows-latest
+    name:  mingw-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { msystem: MINGW64, arch: x86_64 },
+          { msystem: MINGW32, arch: i686 }
+        ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install MSys2 and dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.msystem }}
+          install: >-
+            mingw-w64-${{ matrix.arch }}-python
+            mingw-w64-${{ matrix.arch }}-python-pip
+            mingw-w64-${{ matrix.arch }}-openssl
+
+      - name: Install test dependencies
+        shell: msys2 {0}
+        run: python -m pip install --upgrade nox
+
+      - name: Test examples
+        shell: msys2 {0}
+        run: nox
